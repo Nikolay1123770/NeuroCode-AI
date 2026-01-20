@@ -122,3 +122,63 @@ class NeuroCodeBot:
         
         message = f"""
 🔐 *Ваш код для входа:*
+
+⏱ Код действителен *5 минут*
+
+Введите его на сайте для авторизации.
+"""
+        
+        keyboard = [
+            [InlineKeyboardButton("🔄 Получить новый код", callback_data="get_auth_code")],
+            [InlineKeyboardButton("🌐 Открыть сайт", url="https://neurocode.ai")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.message.reply_text(
+            message,
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+    
+    async def _generate_auth_code_callback(self, query):
+        """Генерация кода через callback"""
+        user = query.from_user
+        
+        async with async_session_maker() as db:
+            code = await telegram_auth_service.create_auth_code(
+                db=db,
+                telegram_id=user.id,
+                username=user.username,
+                first_name=user.first_name,
+                last_name=user.last_name
+            )
+        
+        message = f"""
+🔐 *Ваш новый код для входа:*
+        
+⏱ Код действителен *5 минут*
+"""
+        
+        keyboard = [
+            [InlineKeyboardButton("🔄 Получить новый код", callback_data="get_auth_code")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.message.reply_text(
+            message,
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+    
+    def run(self):
+        """Запуск бота"""
+        self.application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+
+def main():
+    bot = NeuroCodeBot()
+    bot.run()
+
+
+if __name__ == "__main__":
+    main()
